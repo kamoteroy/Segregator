@@ -6,8 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "vue-tsc -b && vite build",
-		"preview": "vite preview",
-		"preinstall": "npm config set optional false"
+		"preview": "vite preview"
 	},
 	"dependencies": {
 		"@tailwindcss/postcss": "^4.1.3",
