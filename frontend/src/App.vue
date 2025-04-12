@@ -114,6 +114,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const lastValue = ref(null);
 const bin1Value = ref(0);
 const bin2Value = ref(0);
+let resetTimeout = null;
 
 const maxBinValue = 100;
 
@@ -192,16 +193,20 @@ onMounted(async () => {
 
 	// Bin values subscription
 	supabase
-		.channel("realtime:public:binValues")
+		.channel("realtime:public:clicks")
 		.on(
 			"postgres_changes",
-			{ event: "INSERT", schema: "public", table: "binValues" },
+			{ event: "INSERT", schema: "public", table: "clicks" },
 			(payload) => {
-				if (payload.new.bin_id === 1) {
-					bin1Value.value = payload.new.value;
-				} else if (payload.new.bin_id === 2) {
-					bin2Value.value = payload.new.value;
-				}
+				lastValue.value = payload.new.value;
+
+				// Clear existing timeout if any
+				if (resetTimeout) clearTimeout(resetTimeout);
+
+				// Set timeout to reset after 5 seconds
+				resetTimeout = setTimeout(() => {
+					lastValue.value = null;
+				}, 5000);
 			}
 		)
 		.subscribe();
