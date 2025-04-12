@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"target": "esnext",
+		"module": "esnext",
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"jsx": "preserve",
+		"strict": true,
+		"types": ["vite/client"], // or any other framework you're using
+		"noImplicitAny": false
+	},
+	"include": [
+		"src/**/*.ts", // Include TypeScript files
+		"src/**/*.d.ts", // Include declaration files
+		"src/**/*.tsx", // Include TSX files
+		"src/**/*.vue" // This line ensures .vue files are included
+	],
+	"exclude": ["node_modules"]
+}
