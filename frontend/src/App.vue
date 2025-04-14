@@ -11,8 +11,8 @@
 
 			<!-- Bin Gauges -->
 			<div class="bin-values flex justify-center gap-10 flex-wrap">
+				<!-- Bin 1 -->
 				<div class="bin-gauge flex flex-col items-center mb-6">
-					<!-- LEDs (blue and red) side by side -->
 					<div class="led-container flex justify-center gap-2 mt-2">
 						<div class="led-item flex items-center gap-2 text-sm">
 							<div class="led" :class="{ active: lastValue === 1 }"></div>
@@ -54,8 +54,8 @@
 					</div>
 				</div>
 
+				<!-- Bin 2 -->
 				<div class="bin-gauge flex flex-col items-center w-32 mb-6">
-					<!-- LEDs (blue and red) side by side -->
 					<div class="led-container flex justify-center gap-2 mt-2">
 						<div class="led-item flex items-center gap-2 text-sm">
 							<div class="led" :class="{ active: lastValue === 2 }"></div>
@@ -97,12 +97,15 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Hidden Audio Element for Buzzer -->
+			<audio ref="buzzerAudio" src="/beep.mp3" preload="auto"></audio>
 		</div>
 	</div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { createClient } from "@supabase/supabase-js";
 
 const SUPABASE_URL = "https://gzjxxpeofotelxrzblez.supabase.co";
@@ -114,6 +117,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const lastValue = ref(null);
 const bin1Value = ref(0);
 const bin2Value = ref(0);
+const buzzerAudio = ref(null);
 let resetTimeout = null;
 
 const maxBinValue = 100;
@@ -146,6 +150,16 @@ const bin2Color = computed(() => {
 	if (bin2Percent.value < 50) return "#28a745"; // Green
 	if (bin2Percent.value < 80) return "#ffc107"; // Orange
 	return "#dc3545"; // Red
+});
+
+watch([bin1Percent, bin2Percent], ([bin1, bin2]) => {
+	if (buzzerAudio.value) {
+		if (bin1 === 100 || bin2 === 100) {
+			buzzerAudio.value.play().catch((err) => {
+				console.warn("Audio play failed:", err);
+			});
+		}
+	}
 });
 
 onMounted(async () => {
