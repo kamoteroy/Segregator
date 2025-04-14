@@ -202,22 +202,8 @@ onMounted(async () => {
 		.on(
 			"postgres_changes",
 			{ event: "INSERT", schema: "public", table: "clicks" },
-			async (payload) => {
-				const clickedBinId = payload.new.value; // Assuming 'value' is 1 or 2
-				const currentBinValue =
-					clickedBinId === 1 ? bin1Value.value : bin2Value.value;
-				const newBinValue = currentBinValue + 10; // Just an example of increasing the value
-
-				// Update the bin value in the "binValues" table based on button press
-				const { data, error } = await supabase
-					.from("binValues")
-					.upsert([{ bin_id: clickedBinId, value: newBinValue }]);
-
-				if (error) {
-					console.error("Error updating bin value:", error);
-				} else {
-					console.log(`Bin ${clickedBinId} value updated to ${newBinValue}`);
-				}
+			(payload) => {
+				lastValue.value = payload.new.value;
 			}
 		)
 		.subscribe();
