@@ -179,41 +179,52 @@ onMounted(async () => {
 		bin2Value.value = bin2Data.value;
 	}
 
-	// Clicks subscription
+	// Subscribe to real-time updates on the "binValues" table
 	supabase
-		.channel("realtime:public:clicks")
+		.channel("realtime:public:binValues")
 		.on(
 			"postgres_changes",
-			{ event: "INSERT", schema: "public", table: "clicks" },
-			(payload) => {
-				lastValue.value = payload.new.value;
+			{ event: "INSERT", schema: "public", table: "binValues" },
+			async (payload) => {
+				// If a new bin value is inserted, update the corresponding bin value
+				if (payload.new.bin_id === 1) {
+					bin1Value.value = payload.new.value;
+				} else if (payload.new.bin_id === 2) {
+					bin2Value.value = payload.new.value;
+				}
 			}
 		)
 		.subscribe();
 
-	// Bin values subscription
+	// Subscribe to the "clicks" table to listen for button presses
 	supabase
 		.channel("realtime:public:clicks")
 		.on(
 			"postgres_changes",
 			{ event: "INSERT", schema: "public", table: "clicks" },
-			(payload) => {
-				lastValue.value = payload.new.value;
+			async (payload) => {
+				const clickedBinId = payload.new.value; // Assuming 'value' is 1 or 2
+				const currentBinValue =
+					clickedBinId === 1 ? bin1Value.value : bin2Value.value;
+				const newBinValue = currentBinValue + 10; // Just an example of increasing the value
 
-				// Clear existing timeout if any
-				if (resetTimeout) clearTimeout(resetTimeout);
+				// Update the bin value in the "binValues" table based on button press
+				const { data, error } = await supabase
+					.from("binValues")
+					.upsert([{ bin_id: clickedBinId, value: newBinValue }]);
 
-				// Set timeout to reset after 5 seconds
-				resetTimeout = setTimeout(() => {
-					lastValue.value = null;
-				}, 5000);
+				if (error) {
+					console.error("Error updating bin value:", error);
+				} else {
+					console.log(`Bin ${clickedBinId} value updated to ${newBinValue}`);
+				}
 			}
 		)
 		.subscribe();
 });
 </script>
 
-<style scoped>
+<style>
 .led-container {
 	display: flex;
 	justify-content: center;
