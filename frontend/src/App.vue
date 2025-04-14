@@ -196,7 +196,6 @@ onMounted(async () => {
 		)
 		.subscribe();
 
-	// Subscribe to the "clicks" table to listen for button presses
 	supabase
 		.channel("realtime:public:clicks")
 		.on(
@@ -204,6 +203,14 @@ onMounted(async () => {
 			{ event: "INSERT", schema: "public", table: "clicks" },
 			(payload) => {
 				lastValue.value = payload.new.value;
+
+				// Clear existing timeout if any
+				if (resetTimeout) clearTimeout(resetTimeout);
+
+				// Set timeout to reset after 5 seconds
+				resetTimeout = setTimeout(() => {
+					lastValue.value = null;
+				}, 5000);
 			}
 		)
 		.subscribe();
