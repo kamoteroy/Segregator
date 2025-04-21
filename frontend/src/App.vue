@@ -180,10 +180,13 @@ watch([bin1Percent, bin2Percent], ([bin1, bin2]) => {
 
 	if (bin1 === 100 && bin2 === 100) {
 		showNativeNotification("Both bins are full!");
+		alert("Both bins are full! Please empty them.");
 	} else if (bin1 === 100) {
 		showNativeNotification("General Waste bin is full!");
+		alert("General Waste bin is full! Please empty it.");
 	} else if (bin2 === 100) {
 		showNativeNotification("E Waste bin is full!");
+		alert("E Waste bin is full! Please empty it.");
 	}
 });
 
