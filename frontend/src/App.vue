@@ -118,6 +118,8 @@ const lastValue = ref(null);
 const bin1Value = ref(0);
 const bin2Value = ref(0);
 const buzzerAudio = ref(null);
+const notificationPermission = ref("default");
+
 let resetTimeout = null;
 
 const maxBinValue = 100;
@@ -152,18 +154,42 @@ const bin2Color = computed(() => {
 	return "#dc3545"; // Red
 });
 
+function requestNotificationPermission() {
+	if ("Notification" in window) {
+		Notification.requestPermission().then((perm) => {
+			notificationPermission.value = perm;
+		});
+	}
+}
+
+function showNativeNotification(message) {
+	if ("Notification" in window && notificationPermission.value === "granted") {
+		new Notification("Bin Alert", {
+			body: message,
+			icon: "/bin-icon.png", // optional icon
+		});
+	}
+}
+
 watch([bin1Percent, bin2Percent], ([bin1, bin2]) => {
-	if (buzzerAudio.value) {
-		if (bin1 === 100 || bin2 === 100) {
-			buzzerAudio.value.play().catch((err) => {
-				console.warn("Audio play failed:", err);
-			});
-		}
+	if (buzzerAudio.value && (bin1 === 100 || bin2 === 100)) {
+		buzzerAudio.value.play().catch((err) => {
+			console.warn("Audio play failed:", err);
+		});
+	}
+
+	if (bin1 === 100 && bin2 === 100) {
+		showNativeNotification("Both bins are full!");
+	} else if (bin1 === 100) {
+		showNativeNotification("General Waste bin is full!");
+	} else if (bin2 === 100) {
+		showNativeNotification("E Waste bin is full!");
 	}
 });
 
 onMounted(async () => {
-	// Fetch latest value for Bin 1
+	requestNotificationPermission();
+
 	const { data: bin1Data, error: bin1Error } = await supabase
 		.from("binValues")
 		.select("value")
@@ -172,13 +198,8 @@ onMounted(async () => {
 		.limit(1)
 		.single();
 
-	if (bin1Error) {
-		console.error("Error fetching bin 1 value:", bin1Error);
-	} else {
-		bin1Value.value = bin1Data.value;
-	}
+	if (!bin1Error) bin1Value.value = bin1Data.value;
 
-	// Fetch latest value for Bin 2
 	const { data: bin2Data, error: bin2Error } = await supabase
 		.from("binValues")
 		.select("value")
@@ -187,20 +208,14 @@ onMounted(async () => {
 		.limit(1)
 		.single();
 
-	if (bin2Error) {
-		console.error("Error fetching bin 2 value:", bin2Error);
-	} else {
-		bin2Value.value = bin2Data.value;
-	}
+	if (!bin2Error) bin2Value.value = bin2Data.value;
 
-	// Subscribe to real-time updates on the "binValues" table
 	supabase
 		.channel("realtime:public:binValues")
 		.on(
 			"postgres_changes",
 			{ event: "INSERT", schema: "public", table: "binValues" },
 			async (payload) => {
-				// If a new bin value is inserted, update the corresponding bin value
 				if (payload.new.bin_id === 1) {
 					bin1Value.value = payload.new.value;
 				} else if (payload.new.bin_id === 2) {
@@ -218,10 +233,8 @@ onMounted(async () => {
 			(payload) => {
 				lastValue.value = payload.new.value;
 
-				// Clear existing timeout if any
 				if (resetTimeout) clearTimeout(resetTimeout);
 
-				// Set timeout to reset after 5 seconds
 				resetTimeout = setTimeout(() => {
 					lastValue.value = null;
 				}, 5000);
